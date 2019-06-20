@@ -7,10 +7,18 @@ def lambda_handler(event, context):
     """
     {{ cookiecutter.macro_name }} Lambda Handler
     """
+    response = {
+        "status": "success",
+        "requestId": event['requestId']
+    }
     region = event['region']
     account_id = event['accountId']
-    request_id = event['requestId']
     transform_id = event['transformId']
-    fragments = event['fragment']
+    fragment = event['fragment']
     params = event['params']
     param_values = event['templateParameterValues']
+
+    ## ADD YOUR CHANGES HERE ##
+
+    response['fragment'] = fragment
+    return response

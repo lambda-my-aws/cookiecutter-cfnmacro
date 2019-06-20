@@ -1,49 +1,44 @@
 ---
 # TEMPLATE GENERATED VIA COOKIECUTTER. ADAPT ACCORDINGLY
 
-Conditions:
-  ReleaseAlias: !Equals
-    - !Ref 'ReleaseNewAlias'
-    - 'True'
+Transform:
+  - AWS::Serverless-2016-10-31
+
 Description: Template for function {{ cookiecutter.macro_name }}
 Parameters:
   NewAliasName:
-    AllowedValues:
-      - 'True'
-      - 'False'
-    Default: 'False'
     Type: String
+    Default: 'live'
   ReleaseNewAlias:
     AllowedValues:
       - 'True'
       - 'False'
-    Default: 'False'
+    Default: 'True'
     Type: String
+Conditions:
+  ReleaseAlias: !Equals
+    - !Ref 'ReleaseNewAlias'
+    - 'True'
 Resources:
-  LambdaAlias:
-    Condition: ReleaseAlias
-    Properties:
-      Description: !Sub 'Alias to version ${LambdaVersion}'
-      FunctionName: !Ref 'LambdaFunction'
-      FunctionVersion: !Ref 'LambdaVersion'
-      Name: !Ref 'NewAliasName'
-    Type: AWS::Lambda::Alias
   LambdaFunction:
-    Type: AWS::Lambda::Function
+    Type: AWS::Serverless::Function
     Properties:
-      Code: {{ cookiecutter.macro_name }}.zip
+      CodeUri: {{ cookiecutter.macro_name }}.zip
+      AutoPublishAlias: !If
+        - ReleaseAlias
+        - !Ref NewAliasName
+        - !Ref 'AWS::NoValue'
       Environment:
         Variables:
           Key: Value
       Handler: function.lambda_handler
       Layers:
         - arn:aws:lambda:eu-west-1:373709687836:layer:ozone:9
-        - arn:aws:lambda:eu-west-1:373709687836:layer:awslambda-handler:1
-      MemorySize: {{ cookiecutter.memory_size }}
+      MemorySize: 256
       Role: !GetAtt 'LambdaFunctionRole.Arn'
-      Runtime: {{ cookiecutter.runtime }}
-      Timeout: {{ cookiecutter.timeout }}
-      FunctionName: {% if cookiecutter.use_cfn_name == 'y' %}!Ref 'AWS::NoValue'{% else %}{{ cookiecutter.macro_name }}{% endif %}
+      Runtime: python3.7
+      Timeout: 15
+      FunctionName: !Ref 'AWS::NoValue'
   LambdaFunctionRole:
     Properties:
       AssumeRolePolicyDocument:
@@ -57,11 +52,8 @@ Resources:
         Version: '2012-10-17'
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess
     Type: AWS::IAM::Role
-  LambdaVersion:
-    Properties:
-      FunctionName: !GetAtt 'LambdaFunction.Arn'
-    Type: AWS::Lambda::Version
   CfnLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -71,7 +63,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       Policies:
-        - PolicyName: Allow Logging for Macro
+        - PolicyName: 'AllowLoggingForMacro'
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -79,7 +71,7 @@ Resources:
                   - logs:PutLogEvents
                   - logs:CreateLogStream
                 Effect: Allow
-                Resources: [ !GetAtt 'CfnLogGroup.Arn' ]
+                Resource: [ !GetAtt 'CfnLogGroup.Arn' ]
       AssumeRolePolicyDocument:
         Statement:
           - Action:
@@ -93,8 +85,8 @@ Resources:
   CfnMacro:
     Type: AWS::CloudFormation::Macro
     Properties:
-      Description: {{ cookiecutter.macro_description }}
-      FunctionName: !Ref LambdaFunction
+      Description: Macro to create a new VPC
+      FunctionName: !Sub '${LambdaFunction.Arn}:live'
       LogGroupName: !Ref CfnLogGroup
-      LogRoleARN: !Ref CfnLogRole
+      LogRoleARN: !GetAtt 'CfnLogRole.Arn'
       Name: {{ cookiecutter.macro_name }}
