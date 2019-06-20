@@ -1,0 +1,100 @@
+---
+# TEMPLATE GENERATED VIA COOKIECUTTER. ADAPT ACCORDINGLY
+
+Conditions:
+  ReleaseAlias: !Equals
+    - !Ref 'ReleaseNewAlias'
+    - 'True'
+Description: Template for function {{ cookiecutter.macro_name }}
+Parameters:
+  NewAliasName:
+    AllowedValues:
+      - 'True'
+      - 'False'
+    Default: 'False'
+    Type: String
+  ReleaseNewAlias:
+    AllowedValues:
+      - 'True'
+      - 'False'
+    Default: 'False'
+    Type: String
+Resources:
+  LambdaAlias:
+    Condition: ReleaseAlias
+    Properties:
+      Description: !Sub 'Alias to version ${LambdaVersion}'
+      FunctionName: !Ref 'LambdaFunction'
+      FunctionVersion: !Ref 'LambdaVersion'
+      Name: !Ref 'NewAliasName'
+    Type: AWS::Lambda::Alias
+  LambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code: {{ cookiecutter.macro_name }}.zip
+      Environment:
+        Variables:
+          Key: Value
+      Handler: function.lambda_handler
+      Layers:
+        - arn:aws:lambda:eu-west-1:373709687836:layer:ozone:9
+        - arn:aws:lambda:eu-west-1:373709687836:layer:awslambda-handler:1
+      MemorySize: {{ cookiecutter.memory_size }}
+      Role: !GetAtt 'LambdaFunctionRole.Arn'
+      Runtime: {{ cookiecutter.runtime }}
+      Timeout: {{ cookiecutter.timeout }}
+      FunctionName: {% if cookiecutter.use_cfn_name == 'y' %}!Ref 'AWS::NoValue'{% else %}{{ cookiecutter.macro_name }}{% endif %}
+  LambdaFunctionRole:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - !Sub 'lambda.${AWS::URLSuffix}'
+        Version: '2012-10-17'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Type: AWS::IAM::Role
+  LambdaVersion:
+    Properties:
+      FunctionName: !GetAtt 'LambdaFunction.Arn'
+    Type: AWS::Lambda::Version
+  CfnLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '${AWS::StackName}-{{ cookiecutter.macro_name }}'
+      RetentionInDays: 14
+  CfnLogRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Policies:
+        - PolicyName: Allow Logging for Macro
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action:
+                  - logs:PutLogEvents
+                  - logs:CreateLogStream
+                Effect: Allow
+                Resources: [ !GetAtt 'CfnLogGroup.Arn' ]
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - !Sub 'cloudformation.${AWS::URLSuffix}'
+        Version: '2012-10-17'
+
+  CfnMacro:
+    Type: AWS::CloudFormation::Macro
+    Properties:
+      Description: {{ cookiecutter.macro_description }}
+      FunctionName: !Ref LambdaFunction
+      LogGroupName: !Ref CfnLogGroup
+      LogRoleARN: !Ref CfnLogRole
+      Name: {{ cookiecutter.macro_name }}

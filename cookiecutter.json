@@ -1,0 +1,16 @@
+{
+    "author": "https://github.com/johnpreston",
+    "full_name": "John Mille",
+    "github_org": "https://github.com/lambda-my-aws",
+    "email": "john@lambda-my-aws.io",
+    "macro_name": "cfnmacro",
+    "bucket_name": "cookiecutter-dev",
+    "year": "2019",
+    "short_description": "A short sentence to describe your lambda function",
+    "macro_description": "{{ cookiecutter.short_description }}",
+    "runtime": ["python3.7"],
+    "use_cfn_name": ["y", "n"],
+    "memory_size": ["128", "256", "512", "1024", "2048"],
+    "timeout": "15",
+    "open_source_license": ["Not open source", "MIT license", "BSD license", "ISC license", "Apache Software License 2.0", "GNU General Public License v3"]
+}
